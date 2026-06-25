@@ -40,19 +40,21 @@ if(NOT reaper_sdk_POPULATED)
 endif()
 
 # On non-Windows, reaper_plugin.h includes ../WDL/swell/swell.h.
+# Clone WDL as a sibling of reaper-plugins/ so the relative include resolves.
 if(NOT WIN32)
-  FetchContent_Declare(
-    wdl
-    GIT_REPOSITORY https://github.com/justinfrankel/WDL.git
-    GIT_TAG main
-    GIT_SHALLOW TRUE
-  )
-  FetchContent_GetProperties(wdl)
-  if(NOT wdl_POPULATED)
-    FetchContent_Populate(wdl)
+  set(wdl_SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/wdl-src")
+  if(NOT EXISTS "${wdl_SOURCE_DIR}/WDL/swell/swell.h")
+    execute_process(
+      COMMAND git clone --depth 1 --branch main
+              https://github.com/justinfrankel/WDL.git ${wdl_SOURCE_DIR}
+      RESULT_VARIABLE wdl_clone_result
+    )
+    if(NOT wdl_clone_result EQUAL 0)
+      message(FATAL_ERROR "Failed to clone WDL repository")
+    endif()
   endif()
-  # Place WDL as a sibling of reaper-plugins/ so the relative include resolves.
-  file(COPY ${wdl_SOURCE_DIR}/ DESTINATION ${reaper_sdk_SOURCE_DIR}/WDL)
+  # WDL repo has a nested WDL/ dir — copy its contents so swell/ lands at the right level.
+  file(COPY ${wdl_SOURCE_DIR}/WDL/ DESTINATION ${reaper_sdk_SOURCE_DIR}/WDL)
 endif()
 
 # ---------------------------------------------------------------------------
