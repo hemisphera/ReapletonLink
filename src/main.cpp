@@ -1,5 +1,5 @@
-#include "reaper_plugin.h"
 #include "LinkController.h"
+#include "reaper_plugin.h"
 #include "ReaperAPI.h"
 
 /**
