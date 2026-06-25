@@ -39,6 +39,7 @@ static LinkControlSurface *g_surface = nullptr;
 // Command IDs for the registered REAPER actions (assigned at load time).
 static int g_cmdEnableLink = 0;
 static int g_cmdDisableLink = 0;
+static int g_cmdToggleLink = 0;
 
 /**
  * hookcommand callback — runs before every main-section action.
@@ -51,14 +52,34 @@ static bool onCommand(int command, int flag)
     if (command == g_cmdEnableLink && g_surface)
     {
         g_surface->setLinkEnabled(true);
+        g_api.RefreshToolbar(g_cmdToggleLink);
         return true;
     }
     if (command == g_cmdDisableLink && g_surface)
     {
         g_surface->setLinkEnabled(false);
+        g_api.RefreshToolbar(g_cmdToggleLink);
+        return true;
+    }
+    if (command == g_cmdToggleLink && g_surface)
+    {
+        g_surface->setLinkEnabled(!g_surface->isLinkEnabled());
+        g_api.RefreshToolbar(g_cmdToggleLink);
         return true;
     }
     return false;
+}
+
+/**
+ * toggleaction callback — lets REAPER show on/off state (checkmark in the
+ * Actions list, pressed toolbar button) for the Toggle Link connection action.
+ * Returns: -1 = not our action, 0 = off, 1 = on.
+ */
+static int onToggleAction(int command)
+{
+    if (command == g_cmdToggleLink)
+        return g_surface && g_surface->isLinkEnabled() ? 1 : 0;
+    return -1;
 }
 
 extern "C" REAPER_PLUGIN_DLL_EXPORT
@@ -112,8 +133,19 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
     gaccelDisable.desc = "ReapletonLink: Disable Link connection";
     rec->Register("gaccel", &gaccelDisable);
 
+    int cmdToggle = rec->Register("command_id", "REAPLETONLINK_TOGGLE_LINK");
+    g_cmdToggleLink = cmdToggle;
+    static gaccel_register_t gaccelToggle;
+    gaccelToggle.accel.fVirt = 0;
+    gaccelToggle.accel.key = 0;
+    gaccelToggle.accel.cmd = static_cast<unsigned short>(cmdToggle);
+    gaccelToggle.desc = "ReapletonLink: Toggle Link connection";
+    rec->Register("gaccel", &gaccelToggle);
+
     // Dispatch our commands to the control surface.
     rec->Register("hookcommand", (void *)onCommand);
+    // Provide on/off state for the toggle action (toolbar button / Actions list).
+    rec->Register("toggleaction", (void *)onToggleAction);
 
     return 1;
 }

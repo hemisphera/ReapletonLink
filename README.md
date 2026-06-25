@@ -13,14 +13,15 @@ A headless REAPER extension that bridges REAPER's tempo, transport, and timeline
 
 ## Actions
 
-The extension registers two actions in REAPER's Actions list (search for `ReapletonLink`):
+The extension registers three actions in REAPER's Actions list (search for `ReapletonLink`):
 
 | Action | Description |
 |--------|-------------|
 | `ReapletonLink: Enable Link connection` | Enables the Ableton Link network connection and starts the master sync loop |
 | `ReapletonLink: Disable Link connection` | Disables the Ableton Link network connection and suspends sync |
+| `ReapletonLink: Toggle Link connection` | Toggles the connection on/off — register this one as a **toolbar button** for visual feedback |
 
-The Link connection is **disabled** when REAPER loads. Use the *Enable* action (assign it a shortcut or toolbar button as desired) to engage sync; *Disable* tears it back down.
+The Link connection is **disabled** when REAPER loads. The *Toggle* action is registered as a toggle action, so when added to a toolbar its button stays **pressed** while the connection is enabled and releases when disabled (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control.
 
 ## Continuous Integration
 

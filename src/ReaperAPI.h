@@ -12,6 +12,7 @@ struct ReaperAPI
     double (*TimeMap2_timeToQN)(void *proj, double tpos) = nullptr;
     double (*TimeMap2_GetDividedBpmAtTime)(void *proj, double time) = nullptr;
     double (*Master_GetTempo)() = nullptr;
+    void (*RefreshToolbar)(int command_id) = nullptr;
 
     bool resolve(void *(*GetFunc)(const char *))
     {
@@ -21,8 +22,10 @@ struct ReaperAPI
         TimeMap2_timeToQN = reinterpret_cast<double (*)(void *, double)>(GetFunc("TimeMap2_timeToQN"));
         TimeMap2_GetDividedBpmAtTime = reinterpret_cast<double (*)(void *, double)>(GetFunc("TimeMap2_GetDividedBpmAtTime"));
         Master_GetTempo = reinterpret_cast<double (*)()>(GetFunc("Master_GetTempo"));
+        RefreshToolbar = reinterpret_cast<void (*)(int)>(GetFunc("RefreshToolbar"));
 
         return GetPlayState && GetPlayPosition && GetCursorPosition &&
-               TimeMap2_timeToQN && TimeMap2_GetDividedBpmAtTime && Master_GetTempo;
+               TimeMap2_timeToQN && TimeMap2_GetDividedBpmAtTime && Master_GetTempo &&
+               RefreshToolbar;
     }
 };
