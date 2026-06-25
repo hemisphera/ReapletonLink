@@ -4,8 +4,10 @@ LinkController::LinkController(const ReaperAPI &api)
     : m_api(api)
     , m_link(120.0)
 {
-    m_link.enable(true);
-    m_link.enableStartStopSync(true);
+    // Start disabled by default. The user enables the Link connection
+    // explicitly via the registered REAPER actions.
+    m_link.enable(false);
+    m_link.enableStartStopSync(false);
 }
 
 LinkController::~LinkController()
@@ -13,8 +15,34 @@ LinkController::~LinkController()
     m_link.enable(false);
 }
 
+void LinkController::setEnabled(bool enabled)
+{
+    if (enabled == m_enabled)
+        return;
+
+    m_enabled = enabled;
+    m_link.enable(enabled);
+    m_link.enableStartStopSync(enabled);
+
+    if (!enabled)
+    {
+        // Reset tracking state so a re-enable re-anchors cleanly.
+        m_wasPlaying = false;
+        m_lastBeats = -1.0;
+    }
+}
+
+bool LinkController::isEnabled() const
+{
+    return m_enabled;
+}
+
 void LinkController::update()
 {
+    // Do nothing while the Link connection is disabled.
+    if (!m_enabled)
+        return;
+
     // 1. Fetch live metadata from REAPER engine.
     int playState = m_api.GetPlayState();
     bool isPlaying = (playState & 1) || (playState & 4);

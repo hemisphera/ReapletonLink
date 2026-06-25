@@ -25,12 +25,41 @@ public:
         m_controller.update();
     }
 
+    /** Forward Link enable/disable to the controller. */
+    void setLinkEnabled(bool enabled) { m_controller.setEnabled(enabled); }
+    bool isLinkEnabled() const { return m_controller.isEnabled(); }
+
 private:
     LinkController m_controller;
 };
 
 static ReaperAPI g_api;
 static LinkControlSurface *g_surface = nullptr;
+
+// Command IDs for the registered REAPER actions (assigned at load time).
+static int g_cmdEnableLink = 0;
+static int g_cmdDisableLink = 0;
+
+/**
+ * hookcommand callback — runs before every main-section action.
+ * Returns true if we handled the command (preventing the action from running).
+ */
+static bool onCommand(int command, int flag)
+{
+    (void)flag;
+
+    if (command == g_cmdEnableLink && g_surface)
+    {
+        g_surface->setLinkEnabled(true);
+        return true;
+    }
+    if (command == g_cmdDisableLink && g_surface)
+    {
+        g_surface->setLinkEnabled(false);
+        return true;
+    }
+    return false;
+}
 
 extern "C" REAPER_PLUGIN_DLL_EXPORT
 int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_info_t *rec)
@@ -63,6 +92,28 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
 
     // Register as a background control surface — no GUI, no dock, no menus.
     rec->Register("csurf_inst", g_surface);
+
+    // Register the Enable/Disable Link connection actions.
+    int cmdEnable = rec->Register("command_id", "REAPLETONLINK_ENABLE_LINK");
+    g_cmdEnableLink = cmdEnable;
+    static gaccel_register_t gaccelEnable;
+    gaccelEnable.accel.fVirt = 0;
+    gaccelEnable.accel.key = 0;
+    gaccelEnable.accel.cmd = static_cast<unsigned short>(cmdEnable);
+    gaccelEnable.desc = "ReapletonLink: Enable Link connection";
+    rec->Register("gaccel", &gaccelEnable);
+
+    int cmdDisable = rec->Register("command_id", "REAPLETONLINK_DISABLE_LINK");
+    g_cmdDisableLink = cmdDisable;
+    static gaccel_register_t gaccelDisable;
+    gaccelDisable.accel.fVirt = 0;
+    gaccelDisable.accel.key = 0;
+    gaccelDisable.accel.cmd = static_cast<unsigned short>(cmdDisable);
+    gaccelDisable.desc = "ReapletonLink: Disable Link connection";
+    rec->Register("gaccel", &gaccelDisable);
+
+    // Dispatch our commands to the control surface.
+    rec->Register("hookcommand", (void *)onCommand);
 
     return 1;
 }

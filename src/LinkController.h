@@ -25,11 +25,16 @@ public:
     /** Called from the control surface Run() method (~30 Hz). */
     void update();
 
+    /** Enable or disable the Link network connection. Disabled by default. */
+    void setEnabled(bool enabled);
+    bool isEnabled() const;
+
 private:
     const ReaperAPI &m_api;
     ableton::Link m_link;
     const double m_quantum = 4.0;
 
+    bool m_enabled = false;
     bool m_wasPlaying = false;
     double m_lastBeats = -1.0;
 

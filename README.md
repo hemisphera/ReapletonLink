@@ -5,10 +5,22 @@ A headless REAPER extension that bridges REAPER's tempo, transport, and timeline
 ## Features
 
 - **Zero-GUI** — no windows, docker tabs, or menus; runs entirely in the background
+- **Opt-in connection** — the Link connection starts **disabled** by default and is toggled via two registered Actions (see below)
 - **Tempo sync** — propagates the effective tempo at the playhead, including tempo envelopes and markers
 - **Transport sync** — start/stop state is shared with all Link peers
 - **Phase sync** — REAPER's exact beat position is injected into the Link session, including seeks and timeline jumps
 - **Efficient updates** — only emits to the network when tempo, transport state, or beat position actually changes
+
+## Actions
+
+The extension registers two actions in REAPER's Actions list (search for `ReapletonLink`):
+
+| Action | Description |
+|--------|-------------|
+| `ReapletonLink: Enable Link connection` | Enables the Ableton Link network connection and starts the master sync loop |
+| `ReapletonLink: Disable Link connection` | Disables the Ableton Link network connection and suspends sync |
+
+The Link connection is **disabled** when REAPER loads. Use the *Enable* action (assign it a shortcut or toolbar button as desired) to engage sync; *Disable* tears it back down.
 
 ## Continuous Integration
 
