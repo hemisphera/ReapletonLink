@@ -115,7 +115,7 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
     rec->Register("csurf_inst", g_surface);
 
     // Register the Enable/Disable Link connection actions.
-    int cmdEnable = rec->Register("command_id", "REAPLETONLINK_ENABLE_LINK");
+    int cmdEnable = rec->Register("command_id", (void *)"REAPLETONLINK_ENABLE_LINK");
     g_cmdEnableLink = cmdEnable;
     static gaccel_register_t gaccelEnable;
     gaccelEnable.accel.fVirt = 0;
@@ -124,7 +124,7 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
     gaccelEnable.desc = "ReapletonLink: Enable Link connection";
     rec->Register("gaccel", &gaccelEnable);
 
-    int cmdDisable = rec->Register("command_id", "REAPLETONLINK_DISABLE_LINK");
+    int cmdDisable = rec->Register("command_id", (void *)"REAPLETONLINK_DISABLE_LINK");
     g_cmdDisableLink = cmdDisable;
     static gaccel_register_t gaccelDisable;
     gaccelDisable.accel.fVirt = 0;
@@ -133,7 +133,7 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
     gaccelDisable.desc = "ReapletonLink: Disable Link connection";
     rec->Register("gaccel", &gaccelDisable);
 
-    int cmdToggle = rec->Register("command_id", "REAPLETONLINK_TOGGLE_LINK");
+    int cmdToggle = rec->Register("command_id", (void *)"REAPLETONLINK_TOGGLE_LINK");
     g_cmdToggleLink = cmdToggle;
     static gaccel_register_t gaccelToggle;
     gaccelToggle.accel.fVirt = 0;
