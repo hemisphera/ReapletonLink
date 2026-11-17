@@ -29,6 +29,10 @@ public:
     void setLinkEnabled(bool enabled) { m_controller.setEnabled(enabled); }
     bool isLinkEnabled() const { return m_controller.isEnabled(); }
 
+    /** Forward "follow remote start/stop" to the controller. */
+    void setFollowRemoteTransport(bool follow) { m_controller.setFollowRemoteTransport(follow); }
+    bool isFollowingRemoteTransport() const { return m_controller.isFollowingRemoteTransport(); }
+
 private:
     LinkController m_controller;
 };
@@ -40,6 +44,7 @@ static LinkControlSurface *g_surface = nullptr;
 static int g_cmdEnableLink = 0;
 static int g_cmdDisableLink = 0;
 static int g_cmdToggleLink = 0;
+static int g_cmdToggleFollowRemote = 0;
 
 /**
  * hookcommand callback — runs before every main-section action.
@@ -67,6 +72,12 @@ static bool onCommand(int command, int flag)
         g_api.RefreshToolbar(g_cmdToggleLink);
         return true;
     }
+    if (command == g_cmdToggleFollowRemote && g_surface)
+    {
+        g_surface->setFollowRemoteTransport(!g_surface->isFollowingRemoteTransport());
+        g_api.RefreshToolbar(g_cmdToggleFollowRemote);
+        return true;
+    }
     return false;
 }
 
@@ -79,7 +90,31 @@ static int onToggleAction(int command)
 {
     if (command == g_cmdToggleLink)
         return g_surface && g_surface->isLinkEnabled() ? 1 : 0;
+    if (command == g_cmdToggleFollowRemote)
+        return g_surface && g_surface->isFollowingRemoteTransport() ? 1 : 0;
     return -1;
+}
+
+/**
+ * Registers a main-section action without a default shortcut.
+ * gaccel_register_t must outlive the plugin, hence the static pool.
+ */
+static int registerAction(reaper_plugin_info_t *rec, const char *idStr, const char *desc)
+{
+    static gaccel_register_t s_accels[8];
+    static int s_count = 0;
+
+    int cmd = rec->Register("command_id", (void *)idStr);
+    if (!cmd || s_count >= 8)
+        return cmd;
+
+    gaccel_register_t &accel = s_accels[s_count++];
+    accel.accel.fVirt = 0;
+    accel.accel.key = 0;
+    accel.accel.cmd = static_cast<unsigned short>(cmd);
+    accel.desc = desc;
+    rec->Register("gaccel", &accel);
+    return cmd;
 }
 
 extern "C" REAPER_PLUGIN_DLL_EXPORT
@@ -114,33 +149,15 @@ int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_in
     // Register as a background control surface — no GUI, no dock, no menus.
     rec->Register("csurf_inst", g_surface);
 
-    // Register the Enable/Disable Link connection actions.
-    int cmdEnable = rec->Register("command_id", (void *)"REAPLETONLINK_ENABLE_LINK");
-    g_cmdEnableLink = cmdEnable;
-    static gaccel_register_t gaccelEnable;
-    gaccelEnable.accel.fVirt = 0;
-    gaccelEnable.accel.key = 0;
-    gaccelEnable.accel.cmd = static_cast<unsigned short>(cmdEnable);
-    gaccelEnable.desc = "ReapletonLink: Enable Link connection";
-    rec->Register("gaccel", &gaccelEnable);
-
-    int cmdDisable = rec->Register("command_id", (void *)"REAPLETONLINK_DISABLE_LINK");
-    g_cmdDisableLink = cmdDisable;
-    static gaccel_register_t gaccelDisable;
-    gaccelDisable.accel.fVirt = 0;
-    gaccelDisable.accel.key = 0;
-    gaccelDisable.accel.cmd = static_cast<unsigned short>(cmdDisable);
-    gaccelDisable.desc = "ReapletonLink: Disable Link connection";
-    rec->Register("gaccel", &gaccelDisable);
-
-    int cmdToggle = rec->Register("command_id", (void *)"REAPLETONLINK_TOGGLE_LINK");
-    g_cmdToggleLink = cmdToggle;
-    static gaccel_register_t gaccelToggle;
-    gaccelToggle.accel.fVirt = 0;
-    gaccelToggle.accel.key = 0;
-    gaccelToggle.accel.cmd = static_cast<unsigned short>(cmdToggle);
-    gaccelToggle.desc = "ReapletonLink: Toggle Link connection";
-    rec->Register("gaccel", &gaccelToggle);
+    // Register the actions shown in REAPER's Actions list.
+    g_cmdEnableLink = registerAction(rec, "REAPLETONLINK_ENABLE_LINK",
+                                     "ReapletonLink: Enable Link connection");
+    g_cmdDisableLink = registerAction(rec, "REAPLETONLINK_DISABLE_LINK",
+                                      "ReapletonLink: Disable Link connection");
+    g_cmdToggleLink = registerAction(rec, "REAPLETONLINK_TOGGLE_LINK",
+                                     "ReapletonLink: Toggle Link connection");
+    g_cmdToggleFollowRemote = registerAction(rec, "REAPLETONLINK_TOGGLE_FOLLOW_REMOTE",
+                                             "ReapletonLink: Toggle follow remote start/stop");
 
     // Dispatch our commands to the control surface.
     rec->Register("hookcommand", (void *)onCommand);
