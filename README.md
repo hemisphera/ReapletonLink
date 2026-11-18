@@ -5,7 +5,7 @@ A headless REAPER extension that bridges REAPER's tempo, transport, and timeline
 ## Features
 
 - **Zero-GUI** — no windows, docker tabs, or menus; runs entirely in the background
-- **Opt-in connection** — the Link connection starts **disabled** by default and is toggled via two registered Actions (see below)
+- **Opt-in connection** — the Link connection starts **disabled** by default and is controlled via registered Actions (see below)
 - **Tempo sync** — propagates the effective tempo at the playhead, including tempo envelopes and markers
 - **Transport sync** — start/stop state is shared with all Link peers; optionally, peers can start/stop REAPER
 - **Phase sync** — REAPER's exact beat position is injected into the Link session, including seeks and timeline jumps
@@ -22,7 +22,7 @@ The extension registers four actions in REAPER's Actions list (search for `Reapl
 | `ReapletonLink: Toggle Link connection` | Toggles the connection on/off — register this one as a **toolbar button** for visual feedback |
 | `ReapletonLink: Toggle follow remote start/stop` | Lets Link peers start/stop REAPER's transport (off by default) — also usable as a toolbar button |
 
-The Link connection is **disabled** when REAPER loads. The *Toggle* action is registered as a toggle action, so when added to a toolbar its button stays **pressed** while the connection is enabled and releases when disabled (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control.
+The Link connection and *follow remote start/stop* are both **disabled** when REAPER loads; neither setting is saved between sessions. Both *Toggle* actions are registered as toggle actions, so when added to a toolbar their buttons stay **pressed** while the option is on and release when it is off (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control of the connection.
 
 ## Remote start/stop
 
@@ -51,10 +51,13 @@ Artifacts are uploaded with the prefix `ReapletonLink-<OS>`.
 
 ### Prerequisites
 
-- **Visual Studio 2022+** (MSVC with C++17 support, includes CMake)
-- **Internet access** — the Ableton Link C++ SDK and REAPER SDK are fetched via CMake's `FetchContent`
+- **CMake 3.15+** and a **C++17 compiler**
+  - Windows: **Visual Studio 2022+** (MSVC, includes CMake)
+  - macOS: Xcode command line tools
+  - Linux: GCC or Clang
+- **Git** and **internet access** — the Ableton Link C++ SDK and REAPER SDK are fetched via CMake's `FetchContent`; on macOS/Linux the [WDL](https://github.com/justinfrankel/WDL) repository is also cloned (REAPER's headers need SWELL)
 
-### Quick build
+### Quick build (Windows)
 
 ```powershell
 .\build.ps1
@@ -72,25 +75,55 @@ Options:
 
 ### Manual build
 
+Windows:
+
 ```powershell
 cmake -S . -B build -A x64
 cmake --build build --config Release
 ```
 
+macOS (universal binary):
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64"
+cmake --build build
+```
+
+Linux:
+
+```sh
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+```
+
 ### Output
 
-The build produces `reaper_ReapletonLink.dll` in `build/Release/`.
+| Platform | File | Location |
+|----------|------|----------|
+| Windows | `reaper_ReapletonLink.dll` | `build/Release/` |
+| macOS | `reaper_ReapletonLink.dylib` | `build/` |
+| Linux | `reaper_ReapletonLink.so` | `build/` |
 
 ## Installation
 
-Copy `reaper_ReapletonLink.dll` into REAPER's `Plugins` directory (found in the REAPER resource path — typically `%APPDATA%/REAPER/Plugins/`).
+Copy the built binary into the `UserPlugins` folder of REAPER's resource path (*Options → Show REAPER resource path* in REAPER), then restart REAPER:
+
+| Platform | Typical location |
+|----------|------------------|
+| Windows | `%APPDATA%\REAPER\UserPlugins\` |
+| macOS | `~/Library/Application Support/REAPER/UserPlugins/` |
+| Linux | `~/.config/REAPER/UserPlugins/` |
 
 ## Project structure
 
 ```
+.github/workflows/
+└── build.yml           — CI build for Windows, macOS, Linux
 src/
-├── main.cpp            — REAPER plugin entry point
-├── LinkController.cpp  — Master sync loop: captures REAPER state, forces Link session
+├── main.cpp            — REAPER plugin entry point; registers the control surface and actions
+├── LinkController.cpp  — Sync loop: pushes REAPER state into the Link session, handles remote start/stop
 ├── LinkController.h
 └── ReaperAPI.h         — REAPER API function pointer resolution
+CMakeLists.txt          — Build definition (fetches Ableton Link, REAPER SDK, WDL)
+build.ps1               — Windows build helper
 ```
