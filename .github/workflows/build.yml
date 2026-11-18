@@ -3,10 +3,13 @@ name: Build
 on:
   push:
     branches: [main, master]
-    tags: ['v*']
   pull_request:
     branches: [main, master]
   workflow_dispatch:
+
+env:
+  MAJOR_VERSION: 0
+  MINOR_VERSION: 0
 
 jobs:
   build:
@@ -51,7 +54,7 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -62,8 +65,23 @@ jobs:
           path: dist
           pattern: ReapletonLink-*
 
+      - name: Get build number
+        id: version
+        env:
+          COUNTER_API_KEY: ${{ secrets.COUNTER_API_KEY }}
+          REPO_NAME: ${{ github.event.repository.name }}
+        run: |
+          response=$(curl -fsS -X POST \
+            "https://counters.hemisphera.com/counters/github/${REPO_NAME}_${MAJOR_VERSION}_${MINOR_VERSION}" \
+            -H "X-API-Key: ${COUNTER_API_KEY}" \
+            -H 'Content-Type: application/json' \
+            -d '{"signature": "'"${GITHUB_SHA}"'", "seed": 1, "increment": 1}')
+          echo "build_number=$(echo "$response" | jq -r '.value.value')" >> "$GITHUB_OUTPUT"
+
       - name: Create GitHub release
         uses: softprops/action-gh-release@v2
         with:
+          tag_name: v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ steps.version.outputs.build_number }}
+          name: v${{ env.MAJOR_VERSION }}.${{ env.MINOR_VERSION }}.${{ steps.version.outputs.build_number }}
           files: dist/**/reaper_ReapletonLink.*
           generate_release_notes: true
