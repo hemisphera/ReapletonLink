@@ -3,10 +3,15 @@
 #include "ReaperAPI.h"
 
 /**
- * Control surface that drives the Ableton Link master sync loop.
+ * Control surface that feeds the Ableton Link sync loop.
  *
  * Registered via rec->Register("csurf_inst", ...) so that REAPER calls Run()
  * approximately 30 times per second on the main thread.
+ *
+ * The sync loop itself runs on a dedicated thread owned by LinkController;
+ * this callback only samples REAPER's transport state and executes transport
+ * start/stop requested by Link peers, keeping REAPER API calls (which are not
+ * thread-safe) on the main thread.
  */
 class LinkControlSurface : public IReaperControlSurface
 {

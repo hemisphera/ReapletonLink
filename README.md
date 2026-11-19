@@ -24,6 +24,10 @@ The extension registers four actions in REAPER's Actions list (search for `Reapl
 
 The Link connection and *follow remote start/stop* are both **disabled** when REAPER loads; neither setting is saved between sessions. Both *Toggle* actions are registered as toggle actions, so when added to a toolbar their buttons stay **pressed** while the option is on and release when it is off (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control of the connection.
 
+## Threading
+
+The sync loop runs on a dedicated thread at a steady ~60 Hz cadence — independent of REAPER's UI load. REAPER's main thread only samples transport state into a small snapshot (a Link-clock / beat-position *clock pair*) inside the control-surface tick and executes transport start/stop requested by Link peers, since REAPER API functions are not thread-safe. The sync thread extrapolates REAPER's beat position between snapshots using that clock pair, so phase corrections stay smooth even when REAPER's main thread stalls.
+
 ## Remote start/stop
 
 By default REAPER is authoritative for transport too: if a Link peer presses start or stop, ReapletonLink immediately reverts the session to REAPER's play state.
