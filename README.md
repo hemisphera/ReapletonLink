@@ -7,7 +7,7 @@ A headless REAPER extension that bridges REAPER's tempo, transport, and timeline
 - **Zero-GUI** — no windows, docker tabs, or menus; runs entirely in the background
 - **Opt-in connection** — the Link connection starts **disabled** by default and is controlled via registered Actions (see below)
 - **Tempo sync** — propagates the effective tempo at the playhead, including tempo envelopes and markers
-- **Transport sync** — start/stop state is shared with all Link peers; optionally, peers can start/stop REAPER
+- **Transport sync** — start/stop state is shared with all Link peers; peers can start/stop REAPER (toggleable)
 - **Phase sync** — REAPER's exact beat position is injected into the Link session, including seeks and timeline jumps
 - **Efficient updates** — only emits to the network when tempo, transport state, or beat position actually changes
 
@@ -20,9 +20,9 @@ The extension registers four actions in REAPER's Actions list (search for `Reapl
 | `ReapletonLink: Enable Link connection` | Enables the Ableton Link network connection and starts the master sync loop |
 | `ReapletonLink: Disable Link connection` | Disables the Ableton Link network connection and suspends sync |
 | `ReapletonLink: Toggle Link connection` | Toggles the connection on/off — register this one as a **toolbar button** for visual feedback |
-| `ReapletonLink: Toggle follow remote start/stop` | Lets Link peers start/stop REAPER's transport (off by default) — also usable as a toolbar button |
+| `ReapletonLink: Toggle follow remote start/stop` | Lets Link peers start/stop REAPER's transport (**on by default**) — also usable as a toolbar button |
 
-The Link connection and *follow remote start/stop* are both **disabled** when REAPER loads; neither setting is saved between sessions. Both *Toggle* actions are registered as toggle actions, so when added to a toolbar their buttons stay **pressed** while the option is on and release when it is off (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control of the connection.
+The **Link connection** is **disabled** when REAPER loads (opt-in via the actions above), while *follow remote start/stop* is **enabled** by default. Neither setting is saved between sessions. Both *Toggle* actions are registered as toggle actions, so when added to a toolbar their buttons stay **pressed** while the option is on and release when it is off (the Actions list also shows a checkmark). Use the *Enable* / *Disable* actions for explicit, scriptable control of the connection.
 
 ## Threading
 
@@ -30,9 +30,7 @@ The sync loop runs on a dedicated thread at a steady ~60 Hz cadence — independ
 
 ## Remote start/stop
 
-By default REAPER is authoritative for transport too: if a Link peer presses start or stop, ReapletonLink immediately reverts the session to REAPER's play state.
-
-With **Toggle follow remote start/stop** enabled, a start/stop from any peer drives REAPER's transport instead:
+With **follow remote start/stop** enabled (the default), a start/stop from any peer drives REAPER's transport:
 
 - **Start** — REAPER starts playback from its edit cursor. As soon as it is playing, REAPER's beat position is injected into the session, so peers align to REAPER's timeline (peers that started immediately may see a small phase jump, since REAPER reacts on its next ~30 Hz tick plus its audio start latency).
 - **Stop** — triggers REAPER's Stop (cursor behaviour follows your REAPER preferences).

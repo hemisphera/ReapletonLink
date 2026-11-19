@@ -100,7 +100,7 @@ private:
     const double m_quantum = 4.0;
 
     std::atomic<bool> m_enabled{false};
-    std::atomic<bool> m_followRemote{false};
+    std::atomic<bool> m_followRemote{true}; // peers may start/stop REAPER by default
 
     // Main thread -> sync thread
     std::mutex m_snapshotMutex;
